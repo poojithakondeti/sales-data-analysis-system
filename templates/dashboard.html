@@ -1,0 +1,167 @@
+```html
+{% extends "base.html" %}
+
+{% block title %}Dashboard | Sales Analytics{% endblock %}
+
+{% block content %}
+
+<style>
+    .page-title {
+        font-size: 28px;
+        font-weight: bold;
+        margin-bottom: 8px;
+    }
+
+    .subtitle {
+        color: #64748b;
+        margin-bottom: 28px;
+    }
+
+    .summary-card {
+        background: white;
+        border-radius: 12px;
+        padding: 22px;
+        height: 100%;
+        box-shadow: 0 3px 12px rgba(15, 23, 42, 0.05);
+    }
+
+    .summary-card p {
+        color: #64748b;
+        margin-bottom: 12px;
+    }
+
+    .summary-card h3 {
+        font-size: 25px;
+        font-weight: bold;
+        overflow-wrap: anywhere;
+    }
+
+    .chart-card {
+        background: white;
+        padding: 18px;
+        border-radius: 12px;
+        height: 100%;
+        box-shadow: 0 3px 12px rgba(15, 23, 42, 0.05);
+    }
+
+    .chart-card h5 {
+        font-size: 17px;
+        margin-bottom: 12px;
+    }
+
+    .chart-card img {
+        display: block;
+        width: 100%;
+        max-width: 520px;
+        height: auto;
+        margin: 0 auto;
+    }
+
+    .analytics-card {
+        margin-top: 24px;
+    }
+
+    @media (max-width: 768px) {
+        .page-title {
+            font-size: 24px;
+        }
+
+        .main-content {
+            padding: 20px;
+        }
+    }
+</style>
+
+<h1 class="page-title">Dashboard</h1>
+<p class="subtitle">Overview of your sales performance</p>
+
+<!-- Summary Cards -->
+<div class="row g-4">
+
+    <div class="col-sm-6 col-xl-3">
+        <div class="summary-card">
+            <p>Total Revenue</p>
+            <h3>₹{{ "%.2f"|format(total_revenue|float) }}</h3>
+        </div>
+    </div>
+
+    <div class="col-sm-6 col-xl-3">
+        <div class="summary-card">
+            <p>Quantity Sold</p>
+            <h3>{{ total_quantity }}</h3>
+        </div>
+    </div>
+
+    <div class="col-sm-6 col-xl-3">
+        <div class="summary-card">
+            <p>Total Sales</p>
+            <h3>{{ total_sales }}</h3>
+        </div>
+    </div>
+
+    <div class="col-sm-6 col-xl-3">
+        <div class="summary-card">
+            <p>Total Products</p>
+            <h3>{{ total_products }}</h3>
+        </div>
+    </div>
+
+</div>
+
+<!-- Dashboard Charts -->
+<div class="row g-4 mt-1">
+
+    <div class="col-lg-6">
+        <div class="chart-card">
+            <h5>Yearly Revenue Analysis</h5>
+            <img
+                src="{{ url_for('static', filename='yearly_revenue.png') }}"
+                alt="Yearly revenue chart">
+        </div>
+    </div>
+
+    <div class="col-lg-6">
+        <div class="chart-card">
+            <h5>Top 5 Selling Products</h5>
+            <img
+                src="{{ url_for('static', filename='top_products.png') }}"
+                alt="Top selling products chart">
+        </div>
+    </div>
+
+    <div class="col-lg-6">
+        <div class="chart-card">
+            <h5>Sales Revenue by Region</h5>
+            <img
+                src="{{ url_for('static', filename='region_sales.png') }}"
+                alt="Revenue by region chart">
+        </div>
+    </div>
+
+    <div class="col-lg-6">
+        <div class="chart-card">
+            <h5>Revenue Distribution by Product</h5>
+            <img
+                src="{{ url_for('static', filename='product_revenue_pie.png') }}"
+                alt="Pie chart showing revenue distribution by product">
+        </div>
+    </div>
+
+</div>
+
+<!-- Explore Analytics -->
+<div class="chart-card analytics-card">
+    <h5>Explore Analytics</h5>
+
+    <p>
+        View product performance, category revenue,
+        regional sales and monthly trends.
+    </p>
+
+    <a href="{{ url_for('analytics') }}" class="btn btn-primary">
+        Open Analytics
+    </a>
+</div>
+
+{% endblock %}
+```
