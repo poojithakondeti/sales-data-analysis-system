@@ -12,4 +12,9 @@ DB_CONFIG = {
     "database": os.getenv("DB_NAME", "sales_db"),
 }
 
-SECRET_KEY = os.getenv("SECRET_KEY", "development-key")
+SECRET_KEY = os.getenv("SECRET_KEY")
+
+if not SECRET_KEY:
+    raise RuntimeError(
+        "SECRET_KEY is missing. Set it in your .env file or hosting environment."
+    )
