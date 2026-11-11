@@ -172,30 +172,17 @@
 
         <div class="topbar-right">
             <nav aria-label="Main navigation">
-                <a href="{{ url_for('dashboard') }}"
-                   class="{% if request.endpoint == 'dashboard' %}active{% endif %}">
-                    Dashboard
-                </a>
-
-                <a href="{{ url_for('products') }}"
-                   class="{% if request.endpoint == 'products' %}active{% endif %}">
-                    Products
-                </a>
-
-                <a href="{{ url_for('sales') }}"
-                   class="{% if request.endpoint == 'sales' %}active{% endif %}">
-                    Sales
-                </a>
-
-                <a href="{{ url_for('upload') }}"
-                   class="{% if request.endpoint == 'upload' %}active{% endif %}">
-                    CSV Upload
-                </a>
-
-                <a href="{{ url_for('analytics') }}"
-                   class="{% if request.endpoint == 'analytics' %}active{% endif %}">
-                    Analytics
-                </a>
+                {% if session.get('role') == 'admin' %}
+                    <a href="{{ url_for('dashboard') }}">Dashboard</a>
+                    <a href="{{ url_for('products') }}">Products</a>
+                    <a href="{{ url_for('sales') }}">Sales</a>
+                    <a href="{{ url_for('admin_orders') }}">User Orders</a>
+                    <a href="{{ url_for('upload') }}">CSV Upload</a>
+                    <a href="{{ url_for('analytics') }}">Analytics</a>
+                {% else %}
+                    <a href="{{ url_for('customer_dashboard') }}">Shop Products</a>
+                    <a href="{{ url_for('my_orders') }}">My Orders</a>
+                {% endif %}
             </nav>
 
             <form method="POST"

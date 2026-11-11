@@ -13,8 +13,3 @@ env/
 __pycache__/
 *.py[cod]
 ca.pem
-# Large backup files
-zipfile.zip
-
-# Large backup files
-zipfile.zip

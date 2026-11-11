@@ -197,6 +197,25 @@
     {% endif %}
 </section>
 
+<!-- Product-specific monthly trend -->
+<section class="content-card">
+    <h2 class="h4 mb-3">Product-wise Monthly Analytics</h2>
+    <form method="GET" action="{{ url_for('analytics') }}" class="filter-form">
+        <label>Search / Select Product
+            <select name="product_id" class="form-select">
+                <option value="">All Products</option>
+                {% for item in analytics_products %}
+                <option value="{{ item.product_id }}" {% if selected_product_id == item.product_id %}selected{% endif %}>{{ item.product_name }}</option>
+                {% endfor %}
+            </select>
+        </label>
+        <input type="hidden" name="year" value="{{ selected_year }}">
+        <button type="submit" class="btn btn-primary">Show 12-Month Graph</button>
+        <a class="reset-button" href="{{ url_for('analytics', year=selected_year) }}">Clear Product</a>
+    </form>
+    <p class="text-secondary mt-2 mb-0">The graph includes January through December. Months without sales are shown as zero.</p>
+</section>
+
 <!-- Analytics Charts -->
 <section class="analytics-grid">
 
@@ -265,7 +284,8 @@
                     'analytics',
                     year=selected_year - 1,
                     start_date=start_date,
-                    end_date=end_date
+                    end_date=end_date,
+                    product_id=selected_product_id
                 ) }}"
             >
                 &larr; Previous Year
@@ -279,7 +299,8 @@
                     'analytics',
                     year=selected_year + 1,
                     start_date=start_date,
-                    end_date=end_date
+                    end_date=end_date,
+                    product_id=selected_product_id
                 ) }}"
             >
                 Next Year &rarr;
