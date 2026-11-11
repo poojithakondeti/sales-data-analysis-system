@@ -1,0 +1,20 @@
+
+# Environment secrets
+.env
+.env.*
+!.env.example
+
+# Python virtual environments
+.venv/
+venv/
+env/
+
+# Python cache files
+__pycache__/
+*.py[cod]
+ca.pem
+# Large backup files
+zipfile.zip
+
+# Large backup files
+zipfile.zip
