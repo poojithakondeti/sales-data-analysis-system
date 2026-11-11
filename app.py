@@ -661,9 +661,6 @@ def dashboard():
 # --------------------------------------------------
 
 
-# --------------------------------------------------
-# 11. PRODUCTS
-# --------------------------------------------------
 
 @app.route("/products", methods=["GET", "POST"])
 def products():
@@ -675,135 +672,43 @@ def products():
     message_type = ""
 
     try:
-
         connection = get_connection()
         cursor = connection.cursor(dictionary=True)
 
-        # Check which database Flask is connected to
-        cursor.execute("SELECT DATABASE() AS database_name")
-        database_info = cursor.fetchone()
-
-        app.logger.info(
-            "Products route connected to database: %s",
-            database_info["database_name"]
-        )
-
         if request.method == "POST":
 
-            # Get values submitted by the HTML form
-            name = request.form.get(
-                "product_name", ""
-            ).strip()
-
-            category = request.form.get(
-                "category", ""
-            ).strip()
-
-            raw_price = request.form.get("price")
-
-            # DEBUG: Check submitted form values
-            app.logger.info(
-                "PRODUCT FORM DATA: %s",
-                request.form.to_dict()
-            )
-
-            app.logger.info(
-                "PRICE RECEIVED FROM FORM: %r",
-                raw_price
-            )
+            name = request.form.get("product_name", "").strip()
+            category = request.form.get("category", "").strip()
 
             try:
+                price = float(request.form.get("price", ""))
+                stock = int(request.form.get("stock_quantity", ""))
 
-                if raw_price is None or raw_price.strip() == "":
-                    raise ValueError("Price was not submitted.")
+                if not math.isfinite(price) or price < 0 or stock < 0:
+                    raise ValueError
 
-                price = float(raw_price)
-
-                if not math.isfinite(price) or price < 0:
-                    raise ValueError("Invalid price.")
-
-            except (ValueError, TypeError) as error:
-
-                app.logger.exception(
-                    "Product price validation failed: %s",
-                    error
-                )
-
+            except (ValueError, TypeError):
                 price = -1
+                stock = -1
 
-            if not name or not category or price < 0:
+            if not name or not category or price < 0 or stock < 0:
 
-                message = (
-                    "Enter product name, category "
-                    "and a valid price."
-                )
-
+                message = "Enter valid product name, category, price and stock."
                 message_type = "danger"
 
             else:
 
-                try:
+                cursor.execute("""
+                    INSERT INTO products
+                    (product_name, category, price, stock_quantity)
+                    VALUES (%s, %s, %s, %s)
+                """, (name, category, price, stock))
 
-                    # Insert the actual submitted price
-                    cursor.execute("""
-                        INSERT INTO products
-                        (
-                            product_name,
-                            category,
-                            price
-                        )
-                        VALUES (%s, %s, %s)
-                    """, (
-                        name,
-                        category,
-                        price
-                    ))
+                connection.commit()
 
-                    connection.commit()
+                flash("Product added successfully!", "success")
+                return redirect(url_for("products"))
 
-                    # Verify the saved price
-                    new_product_id = cursor.lastrowid
-
-                    cursor.execute("""
-                        SELECT
-                            product_id,
-                            product_name,
-                            category,
-                            price
-                        FROM products
-                        WHERE product_id = %s
-                    """, (new_product_id,))
-
-                    saved_product = cursor.fetchone()
-
-                    app.logger.info(
-                        "PRODUCT SAVED IN DATABASE: %s",
-                        saved_product
-                    )
-
-                    flash(
-                        "Product added successfully.",
-                        "success"
-                    )
-
-                    return redirect(url_for("products"))
-
-                except mysql.connector.Error:
-
-                    connection.rollback()
-
-                    app.logger.exception(
-                        "Product insertion failed."
-                    )
-
-                    message = (
-                        "Unable to save product. "
-                        "Check the terminal for the database error."
-                    )
-
-                    message_type = "danger"
-
-        # Fetch products and their saved prices
         cursor.execute("""
             SELECT
                 p.product_id,
@@ -811,44 +716,17 @@ def products():
                 p.category,
                 p.price,
                 p.stock_quantity,
-
-                COALESCE(
-                    SUM(s.quantity), 0
-                ) AS total_quantity,
-
-                COALESCE(
-                    SUM(s.quantity * s.unit_price), 0
-                ) AS total_revenue
-
+                COALESCE(SUM(s.quantity), 0) AS total_quantity,
+                COALESCE(SUM(s.quantity * s.unit_price), 0) AS total_revenue
             FROM products p
-
-            LEFT JOIN sales s
-                ON p.product_id = s.product_id
-
+            LEFT JOIN sales s ON p.product_id = s.product_id
             GROUP BY
-                p.product_id,
-                p.product_name,
-                p.category,
-                p.price,
-                p.stock_quantity
-
+                p.product_id, p.product_name, p.category,
+                p.price, p.stock_quantity
             ORDER BY p.product_id ASC
         """)
 
         product_list = cursor.fetchall()
-
-        # DEBUG: Check prices returned from MySQL
-        app.logger.info(
-            "PRODUCTS FETCHED FROM DATABASE: %s",
-            [
-                {
-                    "id": p["product_id"],
-                    "name": p["product_name"],
-                    "price": p["price"]
-                }
-                for p in product_list
-            ]
-        )
 
         return render_template(
             "products.html",
@@ -857,31 +735,26 @@ def products():
             message_type=message_type
         )
 
-    finally:
+    except mysql.connector.Error:
+        if connection:
+            connection.rollback()
 
+        app.logger.exception("Products page failed.")
+        flash("Unable to load or update products.", "danger")
+        return redirect(url_for("dashboard"))
+
+    finally:
         close_db(cursor, connection)
 
 
-# --------------------------------------------------
-# END OF PRODUCTS SECTION
-# --------------------------------------------------
 
-
-# --------------------------------------------------
-# 12. EDIT PRODUCT
-# --------------------------------------------------
-
-@app.route(
-    "/products/edit/<int:product_id>",
-    methods=["GET", "POST"]
-)
+@app.route("/products/edit/<int:product_id>", methods=["GET", "POST"])
 def edit_product(product_id):
 
     connection = None
     cursor = None
 
     try:
-
         connection = get_connection()
         cursor = connection.cursor(dictionary=True)
 
@@ -892,66 +765,47 @@ def edit_product(product_id):
 
         product = cursor.fetchone()
 
-        if product is None:
-
+        if not product:
             flash("Product not found.", "danger")
-
             return redirect(url_for("products"))
 
         if request.method == "POST":
 
-            name = request.form.get(
-                "product_name", ""
-            ).strip()
-
-            category = request.form.get(
-                "category", ""
-            ).strip()
+            name = request.form.get("product_name", "").strip()
+            category = request.form.get("category", "").strip()
 
             try:
+                price = float(request.form.get("price", ""))
+                stock = int(request.form.get("stock_quantity", ""))
 
-                price = float(
-                    request.form.get("price", "")
-                )
+                if not math.isfinite(price) or price < 0 or stock < 0:
+                    raise ValueError
 
             except (ValueError, TypeError):
-
                 price = -1
+                stock = -1
 
-            if (
-                not name
-                or not category
-                or not math.isfinite(price)
-                or price < 0
-            ):
+            if not name or not category or price < 0 or stock < 0:
 
-                flash(
-                    "Enter valid product name, category and price.",
-                    "danger"
-                )
+                flash("Enter valid product details.", "danger")
 
             else:
 
                 cursor.execute("""
                     UPDATE products
-                    SET product_name = %s,
+                    SET
+                        product_name = %s,
                         category = %s,
-                        price = %s
+                        price = %s,
+                        stock_quantity = %s
                     WHERE product_id = %s
                 """, (
-                    name,
-                    category,
-                    price,
-                    product_id
+                    name, category, price, stock, product_id
                 ))
 
                 connection.commit()
 
-                flash(
-                    "Product updated successfully.",
-                    "success"
-                )
-
+                flash("Product price and stock updated successfully!", "success")
                 return redirect(url_for("products"))
 
         return render_template(
@@ -959,11 +813,16 @@ def edit_product(product_id):
             product=product
         )
 
+    except mysql.connector.Error:
+        if connection:
+            connection.rollback()
+
+        app.logger.exception("Edit product failed.")
+        flash("Unable to update product.", "danger")
+        return redirect(url_for("products"))
+
     finally:
-
         close_db(cursor, connection)
-
-
 # --------------------------------------------------
 # 13. DELETE PRODUCT
 # --------------------------------------------------
